@@ -1,26 +1,32 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import { Layout, Typography } from "antd";
+import SearchBar from "./components/SearchBar";
+import RepoInfo from "./components/RepoInfo";
+import IssuesBoard from "./components/IssuesBoard";
 
-function App() {
+const { Header, Content } = Layout;
+const { Title } = Typography;
+
+const App: React.FC = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Layout style={{ minHeight: "100vh", padding: "20px" }}>
+      <Header
+        style={{ background: "#1890ff", padding: "10px", textAlign: "center" }}
+      >
+        <Title level={2} style={{ color: "white", margin: 0 }}>
+          GitHub Issues Kanban Board
+        </Title>
+      </Header>
+
+      <Content
+        style={{ maxWidth: "1000px", margin: "0 auto", padding: "20px" }}
+      >
+        <SearchBar />
+        <RepoInfo />
+        <IssuesBoard />
+      </Content>
+    </Layout>
   );
-}
+};
 
 export default App;
