@@ -2,7 +2,7 @@ import React from "react";
 import { Card, Tag } from "antd";
 import { useDraggable } from "@dnd-kit/core";
 
-interface IssueCardProps {
+export interface IssueCardProps {
   id: number;
   title: string;
   state: string;

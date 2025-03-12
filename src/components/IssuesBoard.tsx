@@ -1,43 +1,132 @@
 import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragMoveEvent,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store/store";
-import IssueCard from "./IssueCard";
-import { Col, Row } from "antd";
-import { useDroppable, DndContext, DragEndEvent } from "@dnd-kit/core";
 import { moveIssue } from "../store/issuesSlice";
+import StatusColumn from "./StatusColumn";
+import IssueCard, { IssueCardProps } from "./IssueCard";
+import { Col, Row } from "antd";
 
 const IssuesBoard: React.FC = () => {
   const dispatch = useDispatch();
   const issues = useSelector((state: RootState) => state.issues.issues);
+  console.log("issues");
+  console.log(issues);
+
   const [columns, setColumns] = useState({
-    todo: [] as any[],
-    inProgress: [] as any[],
-    done: [] as any[],
+    todo: issues.filter((issue) => issue.state === "open" && !issue.assignee),
+    inProgress: issues.filter(
+      (issue) => issue.state === "open" && issue.assignee
+    ),
+    done: issues.filter((issue) => issue.state === "closed"),
   });
 
   useEffect(() => {
-    const newColumns = {
+    setColumns((prev) => ({
+      ...prev,
       todo: issues.filter((issue) => issue.state === "open" && !issue.assignee),
       inProgress: issues.filter(
         (issue) => issue.state === "open" && issue.assignee
       ),
       done: issues.filter((issue) => issue.state === "closed"),
-    };
-    setColumns(newColumns);
+    }));
   }, [issues]);
+  console.log("columns");
+  console.log(columns);
+
+  const [activeId, setActiveId] = useState<number | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const findColumn = (id: number) => {
+    return Object.keys(columns).find((key) =>
+      columns[key as keyof typeof columns].some((issue) => issue.id === id)
+    );
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(Number(event.active.id));
+  };
+
+  const handleDragOver = (event: DragMoveEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+
+    const activeColumn = findColumn(Number(active.id));
+    const overColumn = findColumn(Number(over.id));
+
+    if (!activeColumn || !overColumn || activeColumn === overColumn) return;
+
+    setColumns((prev) => {
+      if (!activeColumn || !overColumn) return prev;
+
+      const activeIssues = prev[activeColumn as keyof typeof prev].filter(
+        (issue) => issue.id !== active.id
+      );
+      const overIssues = [
+        ...prev[overColumn as keyof typeof prev],
+        prev[activeColumn as keyof typeof prev].find(
+          (issue) => issue.id === active.id
+        ),
+      ];
+
+      return {
+        ...prev,
+        [activeColumn]: activeIssues,
+        [overColumn]: overIssues,
+      };
+    });
+
+    dispatch(moveIssue({ id: Number(active.id), newStatus: overColumn }));
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over) return;
 
-    const issueId = Number(active.id.toString().replace("issue-", ""));
-    const newStatus = over.id.toString();
+    const column = findColumn(Number(active.id)) as keyof typeof columns;
+    if (!column) return;
 
-    dispatch(moveIssue({ id: issueId, newStatus }));
+    const activeIndex = columns[column].findIndex(
+      (issue) => issue.id === active.id
+    );
+    const overIndex = columns[column].findIndex(
+      (issue) => issue.id === over.id
+    );
+
+    if (activeIndex !== overIndex) {
+      setColumns((prev) => ({
+        ...prev,
+        [column]: arrayMove(prev[column], activeIndex, overIndex),
+      }));
+    }
+
+    setActiveId(null);
   };
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
       <Row gutter={16}>
         {Object.entries(columns).map(([status, issues]) => (
           <Col span={8} key={status}>
@@ -45,25 +134,18 @@ const IssuesBoard: React.FC = () => {
           </Col>
         ))}
       </Row>
+      <DragOverlay>
+        {activeId ? (
+          issues.find((issue) => issue.id === activeId) ? (
+            <IssueCard
+              {...(issues.find(
+                (issue) => issue.id === activeId
+              ) as IssueCardProps)}
+            />
+          ) : null
+        ) : null}
+      </DragOverlay>
     </DndContext>
-  );
-};
-
-interface StatusColumnProps {
-  status: string;
-  issues: { id: number; title: string; state: string; assignee?: string }[];
-}
-
-const StatusColumn: React.FC<StatusColumnProps> = ({ status, issues }) => {
-  const { setNodeRef } = useDroppable({ id: status });
-
-  return (
-    <div ref={setNodeRef} style={{ padding: "8px", border: "1px solid #ddd" }}>
-      <h3>{status.toUpperCase()}</h3>
-      {issues.map((issue) => (
-        <IssueCard key={issue.id} {...issue} />
-      ))}
-    </div>
   );
 };
 

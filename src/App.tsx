@@ -3,6 +3,7 @@ import { Layout, Typography } from "antd";
 import SearchBar from "./components/SearchBar";
 import RepoInfo from "./components/RepoInfo";
 import IssuesBoard from "./components/IssuesBoard";
+import Board from "./components/Board";
 
 const { Header, Content } = Layout;
 const { Title } = Typography;
@@ -23,7 +24,7 @@ const App: React.FC = () => {
       >
         <SearchBar />
         <RepoInfo />
-        <IssuesBoard />
+        <Board />
       </Content>
     </Layout>
   );
