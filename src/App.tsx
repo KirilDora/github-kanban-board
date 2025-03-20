@@ -2,7 +2,6 @@ import React from "react";
 import { Layout, Typography } from "antd";
 import SearchBar from "./components/SearchBar";
 import RepoInfo from "./components/RepoInfo";
-import IssuesBoard from "./components/IssuesBoard";
 import Board from "./components/Board";
 
 const { Header, Content } = Layout;

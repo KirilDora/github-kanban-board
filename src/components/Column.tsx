@@ -5,23 +5,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
-import SortableItem from "./SortableItem";
-
-interface ColumnProps {
-  status: string;
-  issues: { id: number; title: string; state: string; assignee?: string }[];
-}
-
-const columnStyle = {
-  background: "#dadada",
-  padding: 10,
-  margin: 10,
-  flex: 1,
-};
+import SortableItem from "./SortableIssue";
+import { ColumnProps } from "../types";
+import { columnStyle } from "../styles";
 
 const Column: React.FC<ColumnProps> = ({ status, issues }) => {
-  //const { id, items } = props;
-
   const { setNodeRef } = useDroppable({
     id: status,
   });

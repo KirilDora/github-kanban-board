@@ -18,20 +18,18 @@ const SearchBar: React.FC = () => {
     dispatch(setRepo({ owner: newOwner, repo: newRepo }));
 
     const savedIssues = sessionStorage.getItem(repoUrl);
-    console.log("savedIssues", savedIssues);
     if (savedIssues) {
       dispatch(setIssues(JSON.parse(savedIssues)));
     } else {
       const issues = await fetchIssues(newOwner, newRepo);
       dispatch(setIssues(issues));
     }
-    //localStorage.setItem(`${newOwner}/${newRepo}`, JSON.stringify(issues));
   };
 
   return (
     <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
       <Input
-        placeholder="Введите URL репозитория"
+        placeholder="Enter URL of repository"
         value={repoUrl}
         onChange={(e) => setRepoUrl(e.target.value)}
       />

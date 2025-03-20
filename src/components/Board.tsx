@@ -14,76 +14,19 @@ import {
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 
 import Column from "./Column";
-import { Item, ItemCardProps } from "./SortableItem";
-import { useDispatch, useSelector } from "react-redux";
+import { Issue } from "./Issue";
+import { useSelector } from "react-redux";
 import { RootState } from "../store/store";
-import { IssueCardProps } from "./IssueCard";
-
-const defaultAnnouncements = {
-  onDragStart({ active }: any) {
-    console.log(`Picked up draggable item ${active.id}.`);
-    return `Picked up draggable item ${active.id}.`;
-  },
-  onDragOver({ active, over }: any) {
-    if (over) {
-      console.log(
-        `Draggable item ${active.id} was moved over droppable area ${over.id}.`
-      );
-      return `Draggable item ${active.id} was moved over droppable area ${over.id}.`;
-    }
-
-    console.log(
-      `Draggable item ${active.id} is no longer over a droppable area.`
-    );
-    return `Draggable item ${active.id} is no longer over a droppable area.`;
-  },
-  onDragEnd({ active, over }: any) {
-    if (over) {
-      console.log(
-        `Draggable item ${active.id} was dropped over droppable area ${over.id}`
-      );
-      return `Draggable item ${active.id} was dropped over droppable area ${over.id}`;
-    }
-
-    console.log(`Draggable item ${active.id} was dropped.`);
-    return `Draggable item ${active.id} was dropped.`;
-  },
-  onDragCancel({ active }: any) {
-    console.log(
-      `Dragging was cancelled. Draggable item ${active.id} was dropped.`
-    );
-    return `Dragging was cancelled. Draggable item ${active.id} was dropped.`;
-  },
-};
-
-const ensureNotEmpty = (arr: IssueCardProps[]) =>
-  arr.length > 0 ? arr : [PLACEHOLDER_ISSUE];
-
-const PLACEHOLDER_ISSUE = { id: -1, title: "", state: "placeholder" };
-
-const getColumns = (issues: IssueCardProps[]) => {
-  const mappedIssues = {
-    todo: ensureNotEmpty(
-      issues.filter((issue) => issue.state === "open" && !issue.assignee)
-    ),
-    inProgress: ensureNotEmpty(
-      issues.filter((issue) => issue.state === "open" && issue.assignee)
-    ),
-    done: ensureNotEmpty(issues.filter((issue) => issue.state === "closed")),
-  };
-  console.log("getColumns issues", mappedIssues);
-  return mappedIssues;
-};
+import { IssueCardProps } from "../types";
+import { getColumns } from "../utils";
 
 export default function Board() {
-  //const dispatch = useDispatch();
   const issues = useSelector((state: RootState) => state.issues.issues);
   const owner = useSelector((state: RootState) => state.issues.owner);
   const repo = useSelector((state: RootState) => state.issues.repo);
   const repoUrl = `https://github.com/${owner}/${repo}`;
   const [columns, setColumns] = useState(() => getColumns(issues));
   useEffect(() => {
-    console.log("issues", issues);
     setColumns(() => getColumns(issues));
   }, [issues]);
 
@@ -104,7 +47,6 @@ export default function Board() {
       }}
     >
       <DndContext
-        accessibility={{ announcements: defaultAnnouncements }}
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
@@ -116,11 +58,10 @@ export default function Board() {
         ))}
         <DragOverlay>
           {activeId ? (
-            <Item
-              /*id={activeId}*/
+            <Issue
               {...(issues.find(
                 (issue) => issue.id === activeId
-              ) as ItemCardProps)}
+              ) as IssueCardProps)}
             />
           ) : null}
         </DragOverlay>
@@ -167,7 +108,7 @@ export default function Board() {
       const overIndex = overItems.findIndex((item) => item.id === overId);
 
       let newIndex;
-      if (findContainer(overId) /*overId in prev*/) {
+      if (findContainer(overId)) {
         newIndex = overItems.length + 1;
       } else {
         const activeRect =
@@ -182,10 +123,6 @@ export default function Board() {
 
         newIndex = overIndex >= 0 ? overIndex + modifier : overItems.length + 1;
       }
-      console.log("active Index", activeIndex);
-      console.log("active column", activeContainer);
-      console.log("over Index", overIndex);
-      console.log("over column", overContainer);
 
       const movedItem = activeItems.find((item) => item.id === activeId);
       if (!movedItem) return prev;
@@ -207,15 +144,6 @@ export default function Board() {
         [overContainer]: [
           ...prev[overContainer as keyof typeof prev].slice(0, newIndex),
           updatedItem,
-          // ...(prev[activeContainer as keyof typeof prev].find(
-          //   (item) => item.id === activeId
-          // )
-          //   ? [
-          //       prev[activeContainer as keyof typeof prev].find(
-          //         (item) => item.id === activeId
-          //       )!,
-          //     ]
-          //   : []),
           ...prev[overContainer as keyof typeof prev].slice(
             newIndex,
             prev[overContainer as keyof typeof prev].length
@@ -263,7 +191,6 @@ export default function Board() {
       ...columns.done,
     ];
 
-    // Сохраняем в sessionStorage
     sessionStorage.setItem(repoUrl, JSON.stringify(updatedIssues));
 
     setActiveId(null);

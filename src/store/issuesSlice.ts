@@ -1,19 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-
-interface Issue {
-  id: number;
-  title: string;
-  state: string;
-  assignee?: string;
-}
-
-type IssuesByRepo = Record<string, Issue[]>;
-
-interface IssuesState {
-  owner: string;
-  repo: string;
-  issues: Issue[];
-}
+import { Issue, IssuesState } from "../types";
 
 const initialState: IssuesState = {
   owner: "",
@@ -32,16 +18,8 @@ const issuesSlice = createSlice({
     setIssues(state, action: PayloadAction<Issue[]>) {
       state.issues = action.payload;
     },
-    moveIssue(state, action: PayloadAction<{ id: number; newStatus: string }>) {
-      const issue = state.issues.find((i) => i.id === action.payload.id);
-      if (issue) {
-        issue.state = action.payload.newStatus === "done" ? "closed" : "open";
-        issue.assignee =
-          action.payload.newStatus === "inProgress" ? "User" : undefined;
-      }
-    },
   },
 });
 
-export const { setRepo, setIssues, moveIssue } = issuesSlice.actions;
+export const { setRepo, setIssues } = issuesSlice.actions;
 export default issuesSlice.reducer;

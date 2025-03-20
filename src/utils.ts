@@ -1,3 +1,5 @@
+import { IssueCardProps } from "./types";
+
 export const fetchIssues = async (owner: string, repo: string) => {
   try {
     const response = await fetch(
@@ -20,4 +22,22 @@ export const fetchIssues = async (owner: string, repo: string) => {
     console.error("Error fetching issues:", error);
     return [];
   }
+};
+
+const PLACEHOLDER_ISSUE = { id: -1, title: "", state: "placeholder" };
+
+const ensureNotEmpty = (arr: IssueCardProps[]) =>
+  arr.length > 0 ? arr : [PLACEHOLDER_ISSUE];
+
+export const getColumns = (issues: IssueCardProps[]) => {
+  const mappedIssues = {
+    todo: ensureNotEmpty(
+      issues.filter((issue) => issue.state === "open" && !issue.assignee)
+    ),
+    inProgress: ensureNotEmpty(
+      issues.filter((issue) => issue.state === "open" && issue.assignee)
+    ),
+    done: ensureNotEmpty(issues.filter((issue) => issue.state === "closed")),
+  };
+  return mappedIssues;
 };
