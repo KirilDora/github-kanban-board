@@ -17,17 +17,7 @@ export const Item: React.FC<ItemCardProps> = ({
   state,
   assignee,
 }) => {
-  const style = {
-    width: "100%",
-    height: 50,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    border: "1px solid black",
-    margin: "10px 0",
-    background: "white",
-    flexDirection: "column",
-  };
+  const isPlaceholder = 1;
 
   return (
     <div
@@ -41,20 +31,25 @@ export const Item: React.FC<ItemCardProps> = ({
         background: "white",
         flexDirection: "column",
         height: "fit-content",
+        padding: "1vw",
       }}
     >
-      {id}
-      <p>
-        <strong>{title}</strong>
-      </p>
-      {assignee && (
-        <p>
-          <strong>Assignee:</strong> {assignee}
-        </p>
+      {isPlaceholder && (
+        <>
+          {id}
+          <p>
+            <strong>{title}</strong>
+          </p>
+          {assignee && (
+            <p>
+              <strong>Assignee:</strong> {assignee}
+            </p>
+          )}
+          <Tag color={state === "open" ? "blue" : "green"}>
+            {state?.toUpperCase()}
+          </Tag>
+        </>
       )}
-      <Tag color={state === "open" ? "blue" : "green"}>
-        {state.toUpperCase()}
-      </Tag>
     </div>
   );
 };
@@ -63,19 +58,17 @@ export default function SortableItem(props: IssueCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: props.id });
 
+  //if (props.id === -1) return null;
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    visibility: props.id === -1 ? ("hidden" as const) : ("visible" as const),
   };
 
   return (
     <Card ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <Item
-        id={props.id}
-        title={props.title}
-        state={props.state}
-        assignee={props.assignee}
-      />
+      <Item {...props} />
     </Card>
   );
 }

@@ -17,9 +17,15 @@ const SearchBar: React.FC = () => {
     const [, newOwner, newRepo] = match;
     dispatch(setRepo({ owner: newOwner, repo: newRepo }));
 
-    const issues = await fetchIssues(newOwner, newRepo);
-    dispatch(setIssues(issues));
-    localStorage.setItem(`${newOwner}/${newRepo}`, JSON.stringify(issues));
+    const savedIssues = sessionStorage.getItem(repoUrl);
+    console.log("savedIssues", savedIssues);
+    if (savedIssues) {
+      dispatch(setIssues(JSON.parse(savedIssues)));
+    } else {
+      const issues = await fetchIssues(newOwner, newRepo);
+      dispatch(setIssues(issues));
+    }
+    //localStorage.setItem(`${newOwner}/${newRepo}`, JSON.stringify(issues));
   };
 
   return (

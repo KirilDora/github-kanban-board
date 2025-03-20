@@ -33,9 +33,7 @@ const Column: React.FC<ColumnProps> = ({ status, issues }) => {
       strategy={verticalListSortingStrategy}
     >
       <div ref={setNodeRef} style={columnStyle}>
-        <h2>
-          <strong>{status}</strong>
-        </h2>
+        <h2>{status.toUpperCase()}</h2>
         {issues.map((issue) => (
           <SortableItem key={issue.id} {...issue} />
         ))}

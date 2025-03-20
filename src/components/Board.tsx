@@ -17,70 +17,75 @@ import Column from "./Column";
 import { Item, ItemCardProps } from "./SortableItem";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store/store";
-
-const wrapperStyle = {
-  display: "flex",
-  flexDirection: "row",
-};
+import { IssueCardProps } from "./IssueCard";
 
 const defaultAnnouncements = {
-  onDragStart(id: Number) {
-    console.log(`Picked up draggable item ${id}.`);
+  onDragStart({ active }: any) {
+    console.log(`Picked up draggable item ${active.id}.`);
+    return `Picked up draggable item ${active.id}.`;
   },
-  onDragOver(id: Number, overId: Number) {
-    if (overId) {
+  onDragOver({ active, over }: any) {
+    if (over) {
       console.log(
-        `Draggable item ${id} was moved over droppable area ${overId}.`
+        `Draggable item ${active.id} was moved over droppable area ${over.id}.`
       );
-      return;
+      return `Draggable item ${active.id} was moved over droppable area ${over.id}.`;
     }
 
-    console.log(`Draggable item ${id} is no longer over a droppable area.`);
+    console.log(
+      `Draggable item ${active.id} is no longer over a droppable area.`
+    );
+    return `Draggable item ${active.id} is no longer over a droppable area.`;
   },
-  onDragEnd(id: Number, overId: Number) {
-    if (overId) {
+  onDragEnd({ active, over }: any) {
+    if (over) {
       console.log(
-        `Draggable item ${id} was dropped over droppable area ${overId}`
+        `Draggable item ${active.id} was dropped over droppable area ${over.id}`
       );
-      return;
+      return `Draggable item ${active.id} was dropped over droppable area ${over.id}`;
     }
 
-    console.log(`Draggable item ${id} was dropped.`);
+    console.log(`Draggable item ${active.id} was dropped.`);
+    return `Draggable item ${active.id} was dropped.`;
   },
-  onDragCancel(id: Number) {
-    console.log(`Dragging was cancelled. Draggable item ${id} was dropped.`);
+  onDragCancel({ active }: any) {
+    console.log(
+      `Dragging was cancelled. Draggable item ${active.id} was dropped.`
+    );
+    return `Dragging was cancelled. Draggable item ${active.id} was dropped.`;
   },
+};
+
+const ensureNotEmpty = (arr: IssueCardProps[]) =>
+  arr.length > 0 ? arr : [PLACEHOLDER_ISSUE];
+
+const PLACEHOLDER_ISSUE = { id: -1, title: "", state: "placeholder" };
+
+const getColumns = (issues: IssueCardProps[]) => {
+  const mappedIssues = {
+    todo: ensureNotEmpty(
+      issues.filter((issue) => issue.state === "open" && !issue.assignee)
+    ),
+    inProgress: ensureNotEmpty(
+      issues.filter((issue) => issue.state === "open" && issue.assignee)
+    ),
+    done: ensureNotEmpty(issues.filter((issue) => issue.state === "closed")),
+  };
+  console.log("getColumns issues", mappedIssues);
+  return mappedIssues;
 };
 
 export default function Board() {
-  const dispatch = useDispatch();
+  //const dispatch = useDispatch();
   const issues = useSelector((state: RootState) => state.issues.issues);
-
-  const [columns, setColumns] = useState({
-    todo: issues.filter((issue) => issue.state === "open" && !issue.assignee),
-    inProgress: issues.filter(
-      (issue) => issue.state === "open" && issue.assignee
-    ),
-    done: issues.filter((issue) => issue.state === "closed"),
-  });
-
+  const owner = useSelector((state: RootState) => state.issues.owner);
+  const repo = useSelector((state: RootState) => state.issues.repo);
+  const repoUrl = `https://github.com/${owner}/${repo}`;
+  const [columns, setColumns] = useState(() => getColumns(issues));
   useEffect(() => {
-    setColumns((prev) => ({
-      ...prev,
-      todo: issues.filter((issue) => issue.state === "open" && !issue.assignee),
-      inProgress: issues.filter(
-        (issue) => issue.state === "open" && issue.assignee
-      ),
-      done: issues.filter((issue) => issue.state === "closed"),
-    }));
+    console.log("issues", issues);
+    setColumns(() => getColumns(issues));
   }, [issues]);
-
-  /*const [items, setItems] = useState({
-    root: ["1", "2", "3"],
-    container1: ["4", "5", "6"],
-    container2: ["7", "8", "9"],
-    container3: [],
-  });*/
 
   const [activeId, setActiveId] = useState<number | null>(null);
 
@@ -99,6 +104,7 @@ export default function Board() {
       }}
     >
       <DndContext
+        accessibility={{ announcements: defaultAnnouncements }}
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}
@@ -108,9 +114,6 @@ export default function Board() {
         {Object.entries(columns).map(([status, issues]) => (
           <Column key={status} status={status} issues={issues} />
         ))}
-        {/*<Column status="todo" items={items.root} />
-        <Column status="inProgress" items={items.container1} />
-        <Column status="done" items={items.container2} />*/}
         <DragOverlay>
           {activeId ? (
             <Item
@@ -136,22 +139,16 @@ export default function Board() {
   }
 
   function handleDragStart(event: DragStartEvent) {
-    /*const { active } = event;
-    const { id } = active;*/
-
     setActiveId(event.active.id as number);
   }
 
   function handleDragOver(event: DragOverEvent) {
-    const { active, over /*draggingRect*/ } = event;
+    const { active, over } = event;
     if (!over) return;
-    //const { id } = active;
-    //const { id: overId } = over;
 
     const activeId = active.id as number;
     const overId = over.id as number;
 
-    // Find the containers
     const activeContainer = findContainer(activeId);
     const overContainer = findContainer(overId);
 
@@ -162,37 +159,67 @@ export default function Board() {
     ) {
       return;
     }
-
     setColumns((prev) => {
       const activeItems = prev[activeContainer as keyof typeof prev];
       const overItems = prev[overContainer as keyof typeof prev];
 
-      // Find the indexes for the items
       const activeIndex = activeItems.findIndex((item) => item.id === activeId);
       const overIndex = overItems.findIndex((item) => item.id === overId);
 
-      let newIndex = overIndex >= 0 ? overIndex : overItems.length;
-      /*if (overId in prev) {
-        // We're at the root droppable of a container
+      let newIndex;
+      if (findContainer(overId) /*overId in prev*/) {
         newIndex = overItems.length + 1;
       } else {
+        const activeRect =
+          active.rect.current?.translated || active.rect.current?.initial;
         const isBelowLastItem =
           over &&
           overIndex === overItems.length - 1 &&
-          draggingRect.offsetTop > over.rect.offsetTop + over.rect.height;
-
+          activeRect !== null &&
+          activeRect !== undefined &&
+          activeRect.top > over.rect.top + over.rect.height;
         const modifier = isBelowLastItem ? 1 : 0;
 
         newIndex = overIndex >= 0 ? overIndex + modifier : overItems.length + 1;
-      }*/
+      }
+      console.log("active Index", activeIndex);
+      console.log("active column", activeContainer);
+      console.log("over Index", overIndex);
+      console.log("over column", overContainer);
+
+      const movedItem = activeItems.find((item) => item.id === activeId);
+      if (!movedItem) return prev;
+
+      const updatedItem = {
+        ...movedItem,
+        state: overContainer === "done" ? "closed" : movedItem.state,
+        assignee:
+          overContainer === "inProgress"
+            ? "-"
+            : (movedItem as IssueCardProps).assignee,
+      };
 
       return {
         ...prev,
-        [activeContainer]: activeItems.filter((item) => item.id !== activeId),
+        [activeContainer]: prev[activeContainer as keyof typeof prev].filter(
+          (item) => item.id !== activeId
+        ),
         [overContainer]: [
-          ...overItems.slice(0, newIndex),
-          activeItems[activeIndex],
-          ...overItems.slice(newIndex),
+          ...prev[overContainer as keyof typeof prev].slice(0, newIndex),
+          updatedItem,
+          // ...(prev[activeContainer as keyof typeof prev].find(
+          //   (item) => item.id === activeId
+          // )
+          //   ? [
+          //       prev[activeContainer as keyof typeof prev].find(
+          //         (item) => item.id === activeId
+          //       )!,
+          //     ]
+          //   : []),
+          ...prev[overContainer as keyof typeof prev].slice(
+            newIndex,
+            prev[overContainer as keyof typeof prev].length
+          ),
         ],
       };
     });
@@ -201,8 +228,7 @@ export default function Board() {
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over) return;
-    //const { id } = active;
-    //const { id: overId } = over;
+
     const activeId = active.id as number;
     const overId = over.id as number;
 
@@ -230,6 +256,15 @@ export default function Board() {
         [overContainer]: arrayMove(prev[overContainer], activeIndex, overIndex),
       }));
     }
+
+    const updatedIssues = [
+      ...columns.todo,
+      ...columns.inProgress,
+      ...columns.done,
+    ];
+
+    // Сохраняем в sessionStorage
+    sessionStorage.setItem(repoUrl, JSON.stringify(updatedIssues));
 
     setActiveId(null);
   }

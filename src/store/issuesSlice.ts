@@ -7,6 +7,8 @@ interface Issue {
   assignee?: string;
 }
 
+type IssuesByRepo = Record<string, Issue[]>;
+
 interface IssuesState {
   owner: string;
   repo: string;
